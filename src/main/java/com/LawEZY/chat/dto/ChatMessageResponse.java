@@ -1,17 +1,15 @@
-package com.LawEZY.chat.model;
+package com.LawEZY.chat.dto;
 
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 
+import com.LawEZY.chat.enums.ChatStatus;
 import com.LawEZY.chat.enums.MessageType;
 
 import lombok.Data;
 
 @Data
-@Document(collection = "chat_messages")
-public class ChatMessage {
+public class ChatMessageResponse {
     
-    @Id
     private String id;
     private String chatSessionId;
     private Long senderId;
@@ -20,5 +18,5 @@ public class ChatMessage {
     private String content;
     private Boolean isLocked = false;
     private java.time.LocalDateTime timestamp;
-    
+    private ChatStatus status;
 }
