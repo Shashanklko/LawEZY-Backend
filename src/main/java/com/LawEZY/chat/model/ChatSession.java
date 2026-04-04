@@ -16,11 +16,11 @@ public class ChatSession {
     private String id;
     
     private Long userId;
-    private Long lawyerId;
+    private Long professionalId;
     private ChatStatus status;
     private Integer tokensGranted;
     private Integer tokensConsumed;
-    private Boolean lawyerEndedChat;
+    private Boolean professionalEndedChat;
     private LocalDateTime createdAt;
     private LocalDateTime lastUpdateAt;
     

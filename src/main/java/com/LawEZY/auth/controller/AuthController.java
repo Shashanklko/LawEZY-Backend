@@ -30,6 +30,14 @@ public class AuthController {
     @Autowired
     private JwtUtil jwtUtil;
 
+    @Autowired
+    private com.LawEZY.user.service.UserService userService;
+
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody com.LawEZY.user.dto.UserRequest userRequest) {
+        return ResponseEntity.ok(userService.createUser(userRequest));
+    }
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AuthRequest authRequest){
         try{

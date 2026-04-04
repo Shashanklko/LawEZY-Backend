@@ -1,0 +1,48 @@
+# LawEZY Backend - Configuration Template (Safe for GitHub)
+# Use this template as a base for your local application.yml
+
+server:
+  port: 8080
+
+spring:
+  application:
+    name: LawEZY-Backend
+
+  # MySQL Configuration (TiDB / Cloud MySQL)
+  datasource:
+    url: jdbc:mysql://${TIDB_HOST}:${TIDB_PORT}/${TIDB_DB}?useSSL=true&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: ${TIDB_USERNAME}
+    password: ${TIDB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # JPA / Hibernate Configurations
+  jpa:
+    hibernate:
+      ddl-auto: update # Change to validate/none for prod
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQL8Dialect
+
+  # MongoDB Configuration (Chat History)
+  data:
+    mongodb:
+      uri: mongodb+srv://${MONGO_USER}:${MONGO_PASS}@${MONGO_HOST}/${MONGO_DB}?appName=LawEZY
+
+  # Google AI Gemini Configuration (Agentic Brain)
+  ai:
+    google:
+      gemini:
+        api-key: ${SPRING_AI_GOOGLE_API_KEY}
+        model: gemini-1.5-pro
+
+# Custom JWT Application Properties
+jwt:
+  secret: ${JWT_SECRET_256BIT} # Use a secure 256-bit generated secret
+  expirationMs: 86400000 # 24 hours
+
+# Frontend Origin Configuration (CORS)
+app:
+  cors:
+    allowed-origins: ${ALLOWED_ORIGINS:http://localhost:5173,http://localhost:8080}

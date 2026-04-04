@@ -3,15 +3,18 @@ package com.LawEZY.user.service;
 import com.LawEZY.user.dto.UserRequest;
 import com.LawEZY.user.dto.UserResponse;
 import com.LawEZY.user.entity.User;
-import com.LawEZY.user.exception.ResourceNotFoundException;
+import com.LawEZY.common.exception.ResourceNotFoundException;
 import com.LawEZY.user.repository.UserRepository;
 import com.LawEZY.user.enums.Role;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.LawEZY.user.repository.ProfessionalProfileRepository;
+import com.LawEZY.user.entity.ProfessionalProfile;
 import java.util.List;
 import java.util.stream.Collectors;
+
 
 // @Service tells Spring: "This is a special class that holds business logic." 
 // Spring will automatically create an object of this class when the app starts.
@@ -24,23 +27,41 @@ public class UserServiceImp implements UserService {
     private UserRepository userRepository;
     @Autowired
     private PasswordEncoder passwordEncoder;
+    @Autowired
+    private ProfessionalProfileRepository professionalProfileRepository;
 
     // --- CREATE A NEW USER ---
     @Override
     public UserResponse createUser(UserRequest userRequest) {
         
-        // 1. The Controller gave us a UserRequest DTO (data from the frontend).
-        // The Database only accepts 'User' entities. So, we call our helper method 
-        // down below to translate the Request DTO into a Database Entity.
+        // 1. Check if email already exists
+        if (userRepository.existsByEmail(userRequest.getEmail())) {
+            throw new RuntimeException("Email already in use: " + userRequest.getEmail());
+        }
+
+        // 2. The Controller gave us a UserRequest DTO...
         User user = mapToEntity(userRequest);
         
         // 2. We ask the UserRepository to save this new Entity into the MySQL/MongoDB database.
         // It returns the saved User (which now has a generated ID attached to it!).
         User savedUser = userRepository.save(user);
+
+        // 3. New logic: If the user is a Lawyer, CA, or Other professional, create an empty profile.
+        if (savedUser.getRole() == Role.LAWYER || savedUser.getRole() == Role.CA || savedUser.getRole() == Role.OTHER) {
+            createProfessionalProfile(savedUser);
+        }
         
-        // 3. We can't send the Entity back to the Controller (security/best-practices).
+        // 4. We can't send the Entity back to the Controller (security/best-practices).
         // So, we translate the saved Entity into a UserResponse DTO and return it.
         return mapToResponse(savedUser); 
+    }
+
+    private void createProfessionalProfile(User user) {
+        ProfessionalProfile profile = new ProfessionalProfile();
+        profile.setUser(user);
+        profile.setCategory(user.getRole());
+        // Default values are already set in entity
+        professionalProfileRepository.save(profile);
     }
 
     // --- GET ONE USER BY ID ---
@@ -83,7 +104,14 @@ public class UserServiceImp implements UserService {
         // 2. Overwrite the old database data with the new data from the UserRequest DTO.
         existingUser.setFirstname(userRequest.getFirstname());
         existingUser.setLastname(userRequest.getLastname());
-        existingUser.setEmail(userRequest.getEmail());
+        
+        // 3. If email is changing, check for uniqueness
+        if (!existingUser.getEmail().equalsIgnoreCase(userRequest.getEmail())) {
+            if (userRepository.existsByEmail(userRequest.getEmail())) {
+                throw new RuntimeException("Email already in use: " + userRequest.getEmail());
+            }
+            existingUser.setEmail(userRequest.getEmail());
+        }
         existingUser.setPassword(passwordEncoder.encode(userRequest.getPassword()));
         existingUser.setRole(userRequest.getRole());
 

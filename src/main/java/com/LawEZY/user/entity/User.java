@@ -22,6 +22,6 @@ public class User {
     private String lastname;
     @Enumerated(EnumType.STRING)
     private Role role;
-    private Integer globalTokenBalance = 0;
+    private Integer globalTokenBalance = 5;
 
 }

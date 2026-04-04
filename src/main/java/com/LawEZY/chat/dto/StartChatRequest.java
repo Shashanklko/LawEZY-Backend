@@ -5,5 +5,5 @@ import lombok.Data;
 @Data
 public class StartChatRequest {
     private Long userId;
-    private Long lawyerId;
+    private Long professionalId;
 }

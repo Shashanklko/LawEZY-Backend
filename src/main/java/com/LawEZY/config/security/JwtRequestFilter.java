@@ -17,6 +17,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 // @Component registers this as a bean so Spring knows our Bouncer exists
+@Component
 public class JwtRequestFilter extends OncePerRequestFilter {
 
     @Autowired

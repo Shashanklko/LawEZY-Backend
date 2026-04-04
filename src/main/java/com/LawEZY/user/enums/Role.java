@@ -5,5 +5,6 @@ public enum Role {
     CLIENT,
     LAWYER,
     CA,
-    CAA
+    OTHER
 }
+
