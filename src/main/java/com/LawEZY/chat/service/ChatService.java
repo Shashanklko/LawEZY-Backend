@@ -20,4 +20,6 @@ public interface ChatService {
     void endChatByUser(@NonNull String sessionId);
     void endChatByProfessional(@NonNull String sessionId);
     void unlockReply(@NonNull String sessionId);
+    List<ChatSession> getUserSessions(@NonNull Long userId);
+    List<ChatSession> getProfessionalSessions(@NonNull Long professionalId);
 }

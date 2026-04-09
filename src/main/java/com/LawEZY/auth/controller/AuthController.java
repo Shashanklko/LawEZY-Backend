@@ -21,6 +21,7 @@ import com.LawEZY.auth.util.JwtUtil;
 
 @RestController
 @RequestMapping("/api/auth")
+@lombok.extern.slf4j.Slf4j
 public class AuthController {
 
     @Autowired
@@ -33,24 +34,43 @@ public class AuthController {
     @Autowired
     private com.LawEZY.user.service.UserService userService;
 
+    @Autowired
+    private com.LawEZY.common.service.AuditLogService auditLogService;
+
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody com.LawEZY.user.dto.UserRequest userRequest) {
+        log.info("New registration attempt for email: {}", userRequest.getEmail());
         return ResponseEntity.ok(userService.createUser(userRequest));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody AuthRequest authRequest){
+    public ResponseEntity<?> login(@RequestBody AuthRequest authRequest, jakarta.servlet.http.HttpServletRequest request){
+        String email = authRequest.getEmail();
+        String ip = request.getRemoteAddr();
+        
         try{
-        authManager.authenticate(
-            new UsernamePasswordAuthenticationToken(authRequest.getEmail(), authRequest.getPassword()));
-        }catch(BadCredentialsException e){
+            authManager.authenticate(
+                new UsernamePasswordAuthenticationToken(email, authRequest.getPassword()));
+            
+            log.info("Login SUCCESS for email: {} | IP: {}", email, ip);
+            
+            UserDetails userDetails = UserDetailsService.loadUserByUsername(email);
+            final String jwt = jwtUtil.generateToken(userDetails);
+            String role = userDetails.getAuthorities().stream().findFirst().map(a -> a.getAuthority()).orElse("USER");
+            
+            auditLogService.logAudit("LOGIN_SUCCESS", "User logged in successfully", ip, email, role);
+            
+            return ResponseEntity.ok(new AuthResponse(jwt, "Login successful"));
+            
+        } catch(BadCredentialsException e){
+            log.warn("Login FAILED for email: {} | IP: {}", email, ip);
+            auditLogService.logSecurityAlert("Login Failed", "Incorrect password attempted", ip, email, "UNDEFINED");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Incorrect email or password");
+        } catch(Exception e) {
+            log.error("Login ERROR for email: {} | Error: {}", email, e.getMessage());
+            auditLogService.logCriticalError("Login System Error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred during login");
         }
-
-        UserDetails userDetails = UserDetailsService.loadUserByUsername(authRequest.getEmail());
-
-        final String jwt = jwtUtil.generateToken(userDetails);
-        return ResponseEntity.ok(new AuthResponse(jwt, "Login successful"));
     }
     
 }

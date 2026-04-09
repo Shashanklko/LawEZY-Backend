@@ -21,6 +21,7 @@ public class ChatSession {
     private Integer tokensGranted;
     private Integer tokensConsumed;
     private Boolean professionalEndedChat;
+    private Boolean isAppointmentPaid = false; // Tracks if an official appointment has been booked and paid
     private LocalDateTime createdAt;
     private LocalDateTime lastUpdateAt;
     

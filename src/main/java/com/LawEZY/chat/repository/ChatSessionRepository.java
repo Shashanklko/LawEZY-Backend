@@ -10,6 +10,8 @@ import com.LawEZY.chat.model.ChatSession;
 
 public interface ChatSessionRepository extends MongoRepository<ChatSession, String>{
 
+    List<ChatSession> findByUserId(Long userId);
+    List<ChatSession> findByProfessionalId(Long professionalId);
     List<ChatSession> findByUserIdAndStatus(Long userId, ChatStatus status);
-    List<ChatSession> findByLawyerId(Long lawyerId);
+    List<ChatSession> findByProfessionalIdAndStatus(Long professionalId, ChatStatus status);
 }

@@ -16,14 +16,15 @@ import java.util.function.Function;
 @Component // Tells Spring to create one instance of this utility we can use anywhere
 public class JwtUtil {
 
-    // This is the private master key used to sign the tokens. NEVER share this or put it in a public repository!
-    // In a real app, this should be stored in your application.properties or environment variables.
-    private static final String SECRET_KEY_STRING = "ThisIsAMassiveSecretKeyThatMustBeAtLeast32CharactersLongToWorkProperly";
+    @org.springframework.beans.factory.annotation.Value("${jwt.secret}")
+    private String secretKeyString;
     
-    private final SecretKey secretKey = Keys.hmacShaKeyFor(SECRET_KEY_STRING.getBytes(StandardCharsets.UTF_8));
+    @org.springframework.beans.factory.annotation.Value("${jwt.expirationMs}")
+    private long expirationTime;
 
-    // Token is valid for 10 hours (1000ms * 60s * 60m * 10h)
-    private static final long EXPIRATION_TIME = 1000 * 60 * 60 * 10;
+    private SecretKey getSecretKey() {
+        return Keys.hmacShaKeyFor(secretKeyString.getBytes(StandardCharsets.UTF_8));
+    }
 
     // 1. EXTRACT USERNAME (Email) FROM TOKEN
     public String extractUsername(String token) {
@@ -44,7 +45,7 @@ public class JwtUtil {
     // The core method that reads the token using our secret key
     private Claims extractAllClaims(String token) {
         return Jwts.parser()
-                .verifyWith(secretKey)
+                .verifyWith(getSecretKey())
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
@@ -69,8 +70,8 @@ public class JwtUtil {
                 .claims(claims)
                 .subject(subject)
                 .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
-                .signWith(secretKey)
+                .expiration(new Date(System.currentTimeMillis() + expirationTime))
+                .signWith(getSecretKey())
                 .compact();
     }
 

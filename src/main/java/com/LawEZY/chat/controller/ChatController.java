@@ -46,6 +46,16 @@ public class ChatController {
         return ResponseEntity.ok(ApiResponse.success(null, "Chat unlocked successfully."));
     }
 
+    @GetMapping("/sessions/user/{userId}")
+    public ResponseEntity<ApiResponse<List<ChatSession>>> getUserSessions(@NonNull @PathVariable Long userId) {
+        return ResponseEntity.ok(ApiResponse.success(chatService.getUserSessions(userId), "User sessions retrieved."));
+    }
+
+    @GetMapping("/sessions/pro/{proId}")
+    public ResponseEntity<ApiResponse<List<ChatSession>>> getProfessionalSessions(@NonNull @PathVariable Long proId) {
+        return ResponseEntity.ok(ApiResponse.success(chatService.getProfessionalSessions(proId), "Professional sessions retrieved."));
+    }
+
     // --- WEBSOCKET HANDLERS (STOMP) ---
 
     @MessageMapping("/chat.send")

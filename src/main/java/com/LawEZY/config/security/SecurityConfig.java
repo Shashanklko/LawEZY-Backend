@@ -64,7 +64,8 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable) // Disable CSRF since we are using JWT tokens
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll() // ALLOW anyone to hit login and register endpoints
-                .anyRequest().authenticated() // Block ALL other endpoints unless they have a valid VIP Pass
+                .requestMatchers("/api/ai/**").permitAll()   // ALLOW Lawino AI access
+                .anyRequest().authenticated() // Block ALL other endpoints unless they have a valid Pass
             )
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // We don't want Spring to remember sessions; JWT handles that

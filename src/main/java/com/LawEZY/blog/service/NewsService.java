@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@lombok.extern.slf4j.Slf4j
 public class NewsService {
 
     @Autowired
@@ -18,11 +19,11 @@ public class NewsService {
     // Fetch news automatically every 6 hours
     @Scheduled(fixedRate = 21600000) 
     public void autoFetchNews() {
-        System.out.println("--- Starting Legal News Update ---");
+        log.info("[NEWS] Starting Legal News Update...");
         
         String title = "Supreme Court Issues New Guidelines on Privacy";
         if (newsRepository.existsByTitle(title)) {
-            System.out.println("News item already exists. Skipping.");
+            log.info("[NEWS] News item already exists. Skipping.");
             return;
         }
 
@@ -33,6 +34,7 @@ public class NewsService {
         sample.setSourceUrl("https://legal-news-source.com/article/1");
         
         newsRepository.save(sample);
+        log.info("[NEWS] Saved NEW news item: {}", title);
     }
 
     public List<NewsItem> getLatestNews() {

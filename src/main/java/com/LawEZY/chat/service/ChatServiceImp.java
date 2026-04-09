@@ -50,8 +50,17 @@ public class ChatServiceImp implements ChatService {
         session.setCreatedAt(LocalDateTime.now());
         session.setLastUpdateAt(LocalDateTime.now());
 
-        return chatSessionRepository.save(session);
+        ChatSession savedSession = chatSessionRepository.save(session);
+        log.info("[CHAT] Started NEW SESSION: ID {} for User ID {} and Prof ID {}", 
+                 savedSession.getId(), savedSession.getUserId(), savedSession.getProfessionalId());
+        return savedSession;
     }
+
+    @Autowired
+    private com.LawEZY.common.service.AuditLogService auditLogService;
+
+    @Autowired
+    private com.LawEZY.ai.service.AiService aiService;
 
     @Override
     @NonNull
@@ -63,8 +72,23 @@ public class ChatServiceImp implements ChatService {
                 .orElseThrow(() -> new ResourceNotFoundException("Chat Session not found"));
 
         String content = request.getContent();
-        if (content != null && (content.matches(".*\\d{10}.*") || content.toLowerCase().contains("call me"))) {
-            throw new RuntimeException("Sharing contact details is blocked for security.");
+        
+        // 🛡️ AI SECURITY GUARD (Python + Gemini Powered Delegate)
+        // Blocking is BYPASSED if an official appointment has been scheduled and paid.
+        boolean isPaid = session.getIsAppointmentPaid() != null && session.getIsAppointmentPaid();
+        if (!isPaid && content != null && !content.trim().isEmpty()) {
+            String aiSafetyResult = aiService.checkSafety(content);
+
+            if (aiSafetyResult != null && aiSafetyResult.contains("BLOCKED")) {
+                auditLogService.logAiBlock(
+                    "Contact details blocked",
+                    "Content: " + content,
+                    String.valueOf(request.getSenderId()),
+                    "USER" // Fallback role for individual chat participants
+                );
+                log.warn("AI Blocked a message containing contact details: {}", content);
+                throw new RuntimeException("Sharing contact details is strictly blocked. Please schedule an appointment to exchange verified contact info.");
+            }
         }
 
         ChatMessage message = new ChatMessage();
@@ -90,7 +114,7 @@ public class ChatServiceImp implements ChatService {
             Integer consumedCount = session.getTokensConsumed();
             session.setTokensConsumed(consumedCount != null ? consumedCount + 1 : 1);
             userRepository.save(user);
-            log.info("Token deducted for User ID: {}. Remaining tokens: {}", user.getId(), user.getGlobalTokenBalance());
+            log.info("[TOKENS] Deducted 1 token from User {}. New Balance: {}", user.getEmail(), user.getGlobalTokenBalance());
         }
 
         // Locked reply logic for Lawyer's initial response
@@ -101,6 +125,7 @@ public class ChatServiceImp implements ChatService {
 
         session.setLastUpdateAt(LocalDateTime.now());
         chatSessionRepository.save(session);
+        log.info("[CHAT] MESSAGE SENT in Session: {} | Sender: {} | Type: {}", sId, request.getSenderId(), request.getType());
         
         ChatMessage savedMsg = chatMessageRepository.save(message);
         return mapToResponse(savedMsg, session.getStatus());
@@ -177,8 +202,20 @@ public class ChatServiceImp implements ChatService {
             }
 
             chatSessionRepository.save(session);
-            log.info("Chat Session ID: {} unlocked and set to ACTIVE.", sessionId);
+            log.info("[CHAT] Session ID: {} UNLOCKED and set to ACTIVE.", sessionId);
         }
+    }
+
+    @Override
+    @NonNull
+    public List<ChatSession> getUserSessions(@NonNull Long userId) {
+        return chatSessionRepository.findByUserId(userId);
+    }
+
+    @Override
+    @NonNull
+    public List<ChatSession> getProfessionalSessions(@NonNull Long professionalId) {
+        return chatSessionRepository.findByProfessionalId(professionalId);
     }
 
     @NonNull

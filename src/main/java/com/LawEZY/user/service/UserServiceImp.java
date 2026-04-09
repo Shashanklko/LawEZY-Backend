@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 // @Service tells Spring: "This is a special class that holds business logic." 
 // Spring will automatically create an object of this class when the app starts.
 @Service
+@lombok.extern.slf4j.Slf4j
 public class UserServiceImp implements UserService {
 
     // @Autowired tells Spring: "Look for a UserRepository bean and plug it in here automatically."
@@ -45,6 +46,7 @@ public class UserServiceImp implements UserService {
         // 2. We ask the UserRepository to save this new Entity into the MySQL/MongoDB database.
         // It returns the saved User (which now has a generated ID attached to it!).
         User savedUser = userRepository.save(user);
+        log.info("New USER created successfully: {} (Role: {})", savedUser.getEmail(), savedUser.getRole());
 
         // 3. New logic: If the user is a Lawyer, CA, or Other professional, create an empty profile.
         if (savedUser.getRole() == Role.LAWYER || savedUser.getRole() == Role.CA || savedUser.getRole() == Role.OTHER) {
@@ -62,6 +64,7 @@ public class UserServiceImp implements UserService {
         profile.setCategory(user.getRole());
         // Default values are already set in entity
         professionalProfileRepository.save(profile);
+        log.info("Created PROFESSIONAL PROFILE for User: {}", user.getEmail());
     }
 
     // --- GET ONE USER BY ID ---
@@ -99,7 +102,10 @@ public class UserServiceImp implements UserService {
         // 1. Check if the user we are trying to update actually exists in the DB.
         // If not, throw an error.
         User existingUser = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> {
+                    log.error("Update failed: User ID {} not found", id);
+                    return new ResourceNotFoundException("User not found");
+                });
 
         // 2. Overwrite the old database data with the new data from the UserRequest DTO.
         existingUser.setFirstname(userRequest.getFirstname());
@@ -117,6 +123,7 @@ public class UserServiceImp implements UserService {
 
         // 3. Save the modified user back to the database. (Spring knows to UPDATE instead of CREATE because it already has an ID).
         User updatedUser = userRepository.save(existingUser);
+        log.info("USER updated successfully: {} (ID: {})", updatedUser.getEmail(), updatedUser.getId());
         
         // 4. Translate the updated database Entity into a secure Response DTO.
         return mapToResponse(updatedUser);
@@ -127,6 +134,7 @@ public class UserServiceImp implements UserService {
     public void deleteUser(Long id) {
         // Tells the database to permanently delete the row matching this ID.
         userRepository.deleteById(id);
+        log.info("USER deleted successfully: ID {}", id);
     }
 
     // ==========================================

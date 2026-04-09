@@ -26,6 +26,9 @@ public class JwtRequestFilter extends OncePerRequestFilter {
     @Autowired
     private JwtUtil jwtUtil;
 
+    @Autowired
+    private com.LawEZY.common.service.AuditLogService auditLogService;
+
     // This method fires BEFORE every single HTTP request hits a Controller
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
@@ -40,11 +43,22 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         // 2. A JWT should look like: "Bearer asdf123.zxvc456.qwer789"
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             jwt = authorizationHeader.substring(7); // Cut off the word "Bearer " to isolate the exact token
-            username = jwtUtil.extractUsername(jwt); // Use our math machine to extract the user's email
+            try {
+                username = jwtUtil.extractUsername(jwt); // Use our math machine to extract the user's email
+            } catch (Exception e) {
+                // If the token is "null", "undefined", or just garbage, we catch the crash here.
+                String ip = request.getRemoteAddr();
+                auditLogService.logSecurityAlert(
+                    "Malformed JWT received",
+                    "Token: " + jwt + " | Error: " + e.getMessage(),
+                    ip,
+                    null,
+                    "ANONYMOUS"
+                );
+            }
         }
 
         // 3. If we found a username in the token, but Spring hasn't logged them in yet...
-               // 3. If we found a username, but Spring hasn't logged them in yet...
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
             try {
